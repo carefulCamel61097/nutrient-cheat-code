@@ -10,9 +10,9 @@ A single self-contained HTML file. Works offline. No build step, no framework, n
 
 **Local**: Open `index.html` in any modern browser. That's it.
 
-**Hosted**: Visit `https://YOUR-USERNAME.github.io/REPO-NAME/` (replace with your URL).
+**Hosted**: <https://carefulcamel61097.github.io/nutrient-cheat-code/>
 
-To deploy on GitHub Pages: push this repo to GitHub, then **Settings → Pages → Deploy from branch → main → / (root) → Save**. Your site goes live within a minute or two at the URL above.
+To deploy your own copy on GitHub Pages: fork or clone, push to your repo, then **Settings → Pages → Deploy from branch → main → / (root) → Save**. Site goes live in a minute or two.
 
 ## What it does
 
