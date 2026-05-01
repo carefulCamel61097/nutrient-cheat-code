@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nutrient Cheat Code</title>
+  <style>
+    :root {
+      --bg: #0e1116;
+      --panel: #1a1b1e;
+      --border: #2a2c33;
+      --text: #e6e6e6;
+      --dim: #8a8f98;
+      --mono: ui-monospace, "JetBrains Mono", "IBM Plex Mono", "Consolas", monospace;
+      --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --accent: #4ec9d6;
+      --bar-under: #a14545;
+      --bar-near: #c9a227;
+      --bar-good: #3fa34d;
+      --bar-over: #d63b3b;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg); color: var(--text);
+      font-family: var(--sans); font-size: 14px;
+    }
+    body { padding: 20px; max-width: 1200px; margin: 0 auto; }
+
+    header {
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+      flex-wrap: wrap; gap: 8px;
+    }
+    h1 {
+      margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 0.2em;
+      color: var(--text); text-transform: uppercase;
+    }
+    .totals { font-family: var(--mono); color: var(--dim); font-size: 13px; }
+    .totals .num { color: var(--text); }
+    .totals .sep { margin: 0 8px; opacity: 0.4; }
+
+    .view-toggle {
+      display: flex; margin-bottom: 20px;
+      border: 1px solid var(--border); border-radius: 4px; width: fit-content;
+      overflow: hidden;
+    }
+    .view-toggle button {
+      background: transparent; color: var(--dim); border: none;
+      padding: 6px 14px; font-family: var(--sans); font-size: 11px; cursor: pointer;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .view-toggle button.active { background: var(--panel); color: var(--text); }
+    .view-toggle button:hover:not(.active) { color: var(--text); }
+
+    main {
+      display: grid; grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.4fr);
+      gap: 20px;
+    }
+    @media (max-width: 760px) {
+      main { grid-template-columns: 1fr; }
+      #bars-section { position: static; max-height: none; overflow: visible; }
+    }
+
+    section {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 4px; padding: 14px 16px;
+    }
+    #bars-section {
+      position: sticky; top: 20px;
+      align-self: start;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    section h2 {
+      margin: 0 0 12px 0; font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+      color: var(--dim); text-transform: uppercase;
+    }
+
+    /* --- BASELINE SECTION --- */
+    .baseline {
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .baseline-label {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 10px; letter-spacing: 0.14em; color: var(--dim);
+      text-transform: uppercase; margin-bottom: 6px;
+      padding-bottom: 4px; border-bottom: 1px solid var(--border);
+    }
+    .check-all-btn {
+      cursor: pointer; color: var(--accent); font-size: 10px;
+      letter-spacing: 0.06em; text-transform: lowercase;
+      user-select: none; font-weight: normal;
+    }
+    .check-all-btn:hover { text-decoration: underline; }
+    .baseline-picker {
+      width: 100%;
+      background: var(--bg); color: var(--dim);
+      border: 1px dashed var(--border);
+      font-family: var(--mono); font-size: 11.5px;
+      padding: 6px 8px; border-radius: 3px; cursor: pointer;
+      margin-top: 8px;
+    }
+    .baseline-picker:hover { color: var(--text); border-style: solid; }
+    .baseline-row {
+      display: grid; grid-template-columns: 18px 1fr auto 22px;
+      align-items: center; gap: 10px; padding: 5px 0;
+      font-family: var(--mono); font-size: 12.5px;
+    }
+    .baseline-row.unchecked .food-name, .baseline-row.unchecked select { opacity: 0.55; }
+    .baseline-row .remove-btn {
+      cursor: pointer; color: var(--dim); font-size: 14px; line-height: 1;
+      width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 3px;
+      user-select: none;
+    }
+    .baseline-row .remove-btn:hover {
+      color: var(--bar-over);
+      background: rgba(255,255,255,0.06);
+    }
+
+    /* --- CLUSTER FOODS --- */
+    .cluster { margin-bottom: 14px; }
+    .cluster:last-child { margin-bottom: 0; }
+    .cluster-label {
+      font-size: 10px; letter-spacing: 0.14em; color: var(--dim);
+      text-transform: uppercase; margin-bottom: 4px;
+      padding-bottom: 4px; border-bottom: 1px solid var(--border);
+    }
+    .food {
+      display: grid; grid-template-columns: 18px 1fr auto;
+      align-items: center; gap: 10px; padding: 5px 0;
+      font-family: var(--mono); font-size: 12.5px;
+    }
+    .food input[type="checkbox"], .baseline-row input[type="checkbox"] {
+      accent-color: var(--accent); cursor: pointer; margin: 0;
+    }
+    .food.unchecked .food-name, .food.unchecked select { opacity: 0.55; }
+    .food.hover-preview, .baseline-row.hover-preview {
+      background: rgba(78, 201, 214, 0.08);
+    }
+    .specialty {
+      color: var(--dim); font-size: 11px; font-weight: normal;
+      margin-left: 4px;
+    }
+
+    /* --- NUTRIENT TOOLTIP (top foods for nutrient on bar hover) --- */
+    .nutrient-tooltip {
+      position: fixed;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      z-index: 100;
+      pointer-events: none;
+      display: none;
+      min-width: 220px; max-width: 320px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    .nutrient-tooltip.visible { display: block; }
+    .nutrient-tooltip .tt-title {
+      color: var(--dim); font-size: 9.5px;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      margin-bottom: 6px; padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .nutrient-tooltip .tt-row {
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 12px; padding: 2px 0;
+    }
+    .nutrient-tooltip .tt-row .tt-name { color: var(--text); }
+    .nutrient-tooltip .tt-row .tt-val { color: var(--dim); white-space: nowrap; }
+
+    /* --- SCROLLBAR (sticky bars panel) --- */
+    #bars-section::-webkit-scrollbar { width: 8px; }
+    #bars-section::-webkit-scrollbar-track { background: var(--bg); }
+    #bars-section::-webkit-scrollbar-thumb {
+      background: var(--border); border-radius: 4px;
+    }
+    #bars-section::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+    #bars-section { scrollbar-color: var(--border) var(--bg); scrollbar-width: thin; }
+    .food select, .baseline-row select {
+      background: var(--bg); color: var(--text); border: 1px solid var(--border);
+      font-family: var(--mono); font-size: 11.5px; padding: 2px 6px; border-radius: 3px;
+      cursor: pointer;
+    }
+
+    /* --- BARS --- */
+    .bar-row {
+      display: grid; grid-template-columns: 26px 110px 1fr 56px;
+      align-items: center; gap: 10px; padding: 4px 0; font-size: 12px;
+    }
+    .bar-row.untracked { opacity: 0.4; }
+    .bar-track-toggle {
+      cursor: pointer; color: var(--accent); font-size: 16px;
+      user-select: none; line-height: 1;
+      width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 4px;
+    }
+    .bar-row.untracked .bar-track-toggle { color: var(--dim); }
+    .bar-track-toggle:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    .bar-label { color: var(--text); font-size: 12px; }
+    .bar-track {
+      position: relative; height: 8px; background: var(--bg); border-radius: 1px;
+      border: 1px solid var(--border); overflow: visible;
+    }
+    .bar-fill {
+      position: absolute; top: 0; left: 0; bottom: 0;
+      transition: width 0.15s ease, background-color 0.15s ease;
+    }
+    .bar-tick {
+      position: absolute; top: -3px; bottom: -3px; width: 1px;
+      background: var(--dim);
+      transform: translateX(-50%);
+    }
+    .bar-tick.ul {
+      background: var(--bar-over); width: 2px;
+      top: -4px; bottom: -4px;
+    }
+    .bar-pct {
+      font-family: var(--mono); color: var(--text);
+      text-align: right; font-size: 11px;
+    }
+    .untracked-divider {
+      grid-column: 1 / -1; margin: 12px 0 6px; padding-top: 8px;
+      border-top: 1px dashed var(--border); font-size: 9.5px;
+      letter-spacing: 0.16em; color: var(--dim); text-transform: uppercase;
+    }
+
+    .legend {
+      margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border);
+      font-family: var(--mono); font-size: 10.5px; color: var(--dim);
+      display: flex; flex-wrap: wrap; gap: 14px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-swatch { width: 8px; height: 8px; border-radius: 1px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Nutrient Cheat Code</h1>
+    <div class="totals">
+      <span class="num" id="total-cal">0</span> cal
+      <span class="sep">·</span>
+      <span class="num" id="total-g">0</span> g
+    </div>
+  </header>
+
+  <nav class="view-toggle" id="view-toggle">
+    <button data-view="common">Common gaps</button>
+    <button data-view="all">All nutrients</button>
+  </nav>
+
+  <main>
+    <section id="foods-section">
+      <h2>Foods</h2>
+      <div id="foods"></div>
+    </section>
+    <section id="bars-section">
+      <h2 id="bars-heading">Coverage</h2>
+      <div id="bars"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--bar-under)"></div>under 40%</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--bar-near)"></div>40–79%</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--bar-good)"></div>80% +</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--bar-over)"></div>over UL</div>
+        <div class="legend-item">● tracked / ○ untracked</div>
+      </div>
+    </section>
+  </main>
+
+  <div id="nutrient-tooltip" class="nutrient-tooltip"></div>
+
+  <script>
+  // ============================================================
+  //  PLACEHOLDER DATA — to be replaced with full USDA-curated set.
+  //  Values are approximate (USDA-flavor) for scaffold demonstration.
+  // ============================================================
+
+  // `gap: true` flags nutrients in the "Common gaps" set — what a limited-variety
+  // diet (skips greens / skips fruit & veg / picky-eater profile) is likely to miss.
+  // Used by the bar-view filter. Not an exhaustive list of importance — the
+  // hidden-by-default 5 (protein, vitA, zinc, selenium, plus one or two macros)
+  // are nutrients a basic meat-bread-dairy diet hits without trying.
+  const NUTRIENTS = [
+    // Macros
+    { id: 'protein',   label: 'Protein',     unit: 'g',  dv: 50,   ul: null },
+    { id: 'fiber',     label: 'Fiber',       unit: 'g',  dv: 28,   ul: null,  gap: true },
+    { id: 'omega3',    label: 'Omega-3 ALA', unit: 'g',  dv: 1.6,  ul: null,  gap: true },
+    // Vitamins
+    { id: 'vitC',      label: 'Vitamin C',   unit: 'mg', dv: 90,   ul: 2000,  gap: true },
+    { id: 'vitA',      label: 'Vitamin A',   unit: 'μg', dv: 900,  ul: 3000 },
+    { id: 'vitD',      label: 'Vitamin D',   unit: 'μg', dv: 20,   ul: 100,   gap: true },
+    { id: 'vitK',      label: 'Vitamin K',   unit: 'μg', dv: 120,  ul: null,  gap: true },
+    { id: 'vitE',      label: 'Vitamin E',   unit: 'mg', dv: 15,   ul: 1000,  gap: true },
+    { id: 'b6',        label: 'Vitamin B6',  unit: 'mg', dv: 1.7,  ul: 100,   gap: true },
+    { id: 'folate',    label: 'Folate (B9)', unit: 'μg', dv: 400,  ul: 1000,  gap: true },
+    { id: 'b12',       label: 'Vitamin B12', unit: 'μg', dv: 2.4,  ul: null,  gap: true },
+    { id: 'choline',   label: 'Choline',     unit: 'mg', dv: 550,  ul: 3500,  gap: true },
+    // Minerals
+    { id: 'calcium',   label: 'Calcium',     unit: 'mg', dv: 1300, ul: 2500,  gap: true },
+    { id: 'iron',      label: 'Iron',        unit: 'mg', dv: 18,   ul: 45,    gap: true },
+    { id: 'iodine',    label: 'Iodine',      unit: 'μg', dv: 150,  ul: 1100,  gap: true },
+    { id: 'magnesium', label: 'Magnesium',   unit: 'mg', dv: 420,  ul: null,  gap: true },
+    { id: 'potassium', label: 'Potassium',   unit: 'mg', dv: 4700, ul: null,  gap: true },
+    { id: 'zinc',      label: 'Zinc',        unit: 'mg', dv: 11,   ul: 40   },
+    { id: 'selenium',  label: 'Selenium',    unit: 'μg', dv: 55,   ul: 400  },
+  ];
+
+  const CLUSTERS = [
+    { id: 'leafy',    label: 'Leafy greens',         primary: ['vitK', 'vitA', 'folate'] },
+    { id: 'colorful', label: 'Colorful fruit/veg',   primary: ['vitC', 'vitA'] },
+    { id: 'nuts',     label: 'Nuts',                 primary: ['vitE', 'magnesium', 'omega3'] },
+    { id: 'seeds',    label: 'Seeds',                primary: ['magnesium', 'zinc', 'iron'] },
+    { id: 'special',  label: 'Specialists',          primary: ['selenium'] },
+  ];
+
+  // FOODS combine cluster (curated dense) and common (everyday baseline) entries.
+  // category 'cluster' → rendered grouped by cluster.
+  // category 'common'  → available in the baseline picker dropdown.
+  const FOODS = [
+    // ----- CLUSTER FOODS -----
+    { id: 'kale', name: 'Kale', category: 'cluster', cluster: 'leafy',
+      portions: [['handful', 15], ['30g', 30], ['100g', 100]],
+      defaultPortion: 1,
+      per100g: { calories: 35, protein: 2.9, fiber: 4.1, omega3: 0.18,
+                 vitC: 93, vitA: 241, vitD: 0, vitK: 390, vitE: 1.5,
+                 b6: 0.27, folate: 62, b12: 0, choline: 0.5,
+                 calcium: 254, iron: 1.5, iodine: 0, magnesium: 33, potassium: 348, zinc: 0.4, selenium: 0.9 } },
+    { id: 'pepper', name: 'Red bell pepper', category: 'cluster', cluster: 'colorful',
+      portions: [['½ medium (60g)', 60], ['1 medium (120g)', 120], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 31, protein: 1.0, fiber: 2.1, omega3: 0.06,
+                 vitC: 128, vitA: 157, vitD: 0, vitK: 7.4, vitE: 1.6,
+                 b6: 0.29, folate: 46, b12: 0, choline: 5.6,
+                 calcium: 7, iron: 0.4, iodine: 0, magnesium: 12, potassium: 211, zinc: 0.25, selenium: 0.1 } },
+    // Blueberries are antioxidant-rich (anthocyanins) but don't drive any tracked
+    // nutrient — moved to the baseline picker as an opt-in.
+    { id: 'blueberry', name: 'Blueberries', category: 'common',
+      portions: [['30g', 30], ['½ cup (75g)', 75], ['100g', 100]],
+      defaultPortion: 1,
+      per100g: { calories: 57, protein: 0.7, fiber: 2.4, omega3: 0.06,
+                 vitC: 9.7, vitA: 3, vitD: 0, vitK: 19, vitE: 0.6,
+                 b6: 0.05, folate: 6, b12: 0, choline: 6,
+                 calcium: 6, iron: 0.3, iodine: 0, magnesium: 6, potassium: 77, zinc: 0.16, selenium: 0.1 } },
+    { id: 'walnut', name: 'Walnut', category: 'cluster', cluster: 'nuts',
+      portions: [['1 nut (4g)', 4], ['handful (15g)', 15], ['30g', 30]],
+      defaultPortion: 1,
+      per100g: { calories: 654, protein: 15, fiber: 6.7, omega3: 9.1,
+                 vitC: 1.3, vitA: 1, vitD: 0, vitK: 2.7, vitE: 0.7,
+                 b6: 0.54, folate: 98, b12: 0, choline: 39,
+                 calcium: 98, iron: 2.9, iodine: 0, magnesium: 158, potassium: 441, zinc: 3.1, selenium: 4.9 } },
+    { id: 'pumpkin_seed', name: 'Pumpkin seeds', category: 'cluster', cluster: 'seeds',
+      portions: [['10g', 10], ['handful (20g)', 20], ['30g', 30]],
+      defaultPortion: 2,
+      per100g: { calories: 559, protein: 30, fiber: 6.0, omega3: 0.12,
+                 vitC: 2, vitA: 1, vitD: 0, vitK: 7.3, vitE: 2.2,
+                 b6: 0.14, folate: 58, b12: 0, choline: 63,
+                 calcium: 46, iron: 8.8, iodine: 0, magnesium: 592, potassium: 809, zinc: 7.8, selenium: 9.4 } },
+    { id: 'chia', name: 'Chia seeds', category: 'cluster', cluster: 'seeds',
+      portions: [['1 tbsp (10g)', 10], ['2 tbsp (20g)', 20], ['30g', 30]],
+      defaultPortion: 0,
+      per100g: { calories: 486, protein: 17, fiber: 34, omega3: 17.8,
+                 vitC: 1.6, vitA: 4, vitD: 0, vitK: 0, vitE: 0.5,
+                 b6: 0.08, folate: 49, b12: 0, choline: 78,
+                 calcium: 631, iron: 7.7, iodine: 0, magnesium: 335, potassium: 407, zinc: 4.6, selenium: 55.2 } },
+    { id: 'brazil_nut', name: 'Brazil nut', category: 'cluster', cluster: 'special',
+      portions: [['1 nut (5g)', 5], ['2 nuts (10g)', 10], ['3 nuts (15g)', 15]],
+      defaultPortion: 0,
+      per100g: { calories: 656, protein: 14, fiber: 7.5, omega3: 0.05,
+                 vitC: 0.7, vitA: 0, vitD: 0, vitK: 0, vitE: 5.7,
+                 b6: 0.10, folate: 22, b12: 0, choline: 30,
+                 calcium: 160, iron: 2.4, iodine: 0, magnesium: 376, potassium: 659, zinc: 4.1, selenium: 1917 } },
+
+    // Leafy greens (additions)
+    { id: 'spinach', name: 'Spinach (raw)', category: 'cluster', cluster: 'leafy',
+      portions: [['handful (15g)', 15], ['50g', 50], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 23, protein: 2.9, fiber: 2.2, omega3: 0.14,
+                 vitC: 28, vitA: 469, vitD: 0, vitK: 483, vitE: 2.0,
+                 b6: 0.20, folate: 194, b12: 0, choline: 19.3,
+                 calcium: 99, iron: 2.7, iodine: 0, magnesium: 79, potassium: 558, zinc: 0.53, selenium: 1.0 } },
+    { id: 'swiss_chard', name: 'Swiss chard', category: 'cluster', cluster: 'leafy',
+      portions: [['handful (15g)', 15], ['50g', 50], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 19, protein: 1.8, fiber: 1.6, omega3: 0.04,
+                 vitC: 30, vitA: 306, vitD: 0, vitK: 830, vitE: 1.9,
+                 b6: 0.10, folate: 14, b12: 0, choline: 18,
+                 calcium: 51, iron: 1.8, iodine: 0, magnesium: 81, potassium: 379, zinc: 0.36, selenium: 0.9 } },
+    { id: 'collard', name: 'Collard greens', category: 'cluster', cluster: 'leafy',
+      portions: [['handful (15g)', 15], ['50g', 50], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 32, protein: 3.0, fiber: 4.0, omega3: 0.13,
+                 vitC: 35, vitA: 251, vitD: 0, vitK: 437, vitE: 2.3,
+                 b6: 0.17, folate: 129, b12: 0, choline: 19,
+                 calcium: 232, iron: 0.5, iodine: 0, magnesium: 27, potassium: 213, zinc: 0.13, selenium: 1.3 } },
+    { id: 'arugula', name: 'Arugula', category: 'cluster', cluster: 'leafy',
+      portions: [['handful (10g)', 10], ['25g', 25], ['50g', 50]],
+      defaultPortion: 0,
+      per100g: { calories: 25, protein: 2.6, fiber: 1.6, omega3: 0.17,
+                 vitC: 15, vitA: 119, vitD: 0, vitK: 109, vitE: 0.43,
+                 b6: 0.07, folate: 97, b12: 0, choline: 15.3,
+                 calcium: 160, iron: 1.5, iodine: 0, magnesium: 47, potassium: 369, zinc: 0.47, selenium: 0.3 } },
+
+    // Colorful fruit/veg (additions)
+    { id: 'strawberry', name: 'Strawberries', category: 'cluster', cluster: 'colorful',
+      portions: [['handful (75g)', 75], ['1 cup (152g)', 152], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 32, protein: 0.7, fiber: 2.0, omega3: 0.07,
+                 vitC: 59, vitA: 1, vitD: 0, vitK: 2.2, vitE: 0.29,
+                 b6: 0.05, folate: 24, b12: 0, choline: 5.7,
+                 calcium: 16, iron: 0.4, iodine: 0, magnesium: 13, potassium: 153, zinc: 0.14, selenium: 0.4 } },
+    { id: 'tomato', name: 'Tomato', category: 'cluster', cluster: 'colorful',
+      portions: [['1 medium (123g)', 123], ['1 cup (180g)', 180], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 18, protein: 0.9, fiber: 1.2, omega3: 0.003,
+                 vitC: 14, vitA: 42, vitD: 0, vitK: 7.9, vitE: 0.54,
+                 b6: 0.08, folate: 15, b12: 0, choline: 6.7,
+                 calcium: 10, iron: 0.3, iodine: 0, magnesium: 11, potassium: 237, zinc: 0.17, selenium: 0 } },
+    { id: 'carrot', name: 'Carrot', category: 'cluster', cluster: 'colorful',
+      portions: [['1 medium (61g)', 61], ['100g', 100], ['200g', 200]],
+      defaultPortion: 0,
+      per100g: { calories: 41, protein: 0.9, fiber: 2.8, omega3: 0.002,
+                 vitC: 5.9, vitA: 835, vitD: 0, vitK: 13.2, vitE: 0.66,
+                 b6: 0.14, folate: 19, b12: 0, choline: 8.8,
+                 calcium: 33, iron: 0.3, iodine: 0, magnesium: 12, potassium: 320, zinc: 0.24, selenium: 0.1 } },
+    { id: 'mango', name: 'Mango', category: 'cluster', cluster: 'colorful',
+      portions: [['½ medium (103g)', 103], ['1 medium (207g)', 207], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 60, protein: 0.8, fiber: 1.6, omega3: 0.05,
+                 vitC: 36.4, vitA: 54, vitD: 0, vitK: 4.2, vitE: 0.9,
+                 b6: 0.12, folate: 43, b12: 0, choline: 7.6,
+                 calcium: 11, iron: 0.16, iodine: 0, magnesium: 10, potassium: 168, zinc: 0.09, selenium: 0.6 } },
+
+    // Nuts (additions)
+    { id: 'almond', name: 'Almonds', category: 'cluster', cluster: 'nuts',
+      portions: [['handful (28g)', 28], ['50g', 50], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 579, protein: 21, fiber: 12.5, omega3: 0.003,
+                 vitC: 0, vitA: 0, vitD: 0, vitK: 0, vitE: 25.6,
+                 b6: 0.14, folate: 44, b12: 0, choline: 52.1,
+                 calcium: 269, iron: 3.7, iodine: 0, magnesium: 270, potassium: 733, zinc: 3.1, selenium: 4.1 } },
+    { id: 'hazelnut', name: 'Hazelnuts', category: 'cluster', cluster: 'nuts',
+      portions: [['handful (28g)', 28], ['50g', 50], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 628, protein: 15, fiber: 9.7, omega3: 0.09,
+                 vitC: 6.3, vitA: 1, vitD: 0, vitK: 14, vitE: 15,
+                 b6: 0.56, folate: 113, b12: 0, choline: 45.6,
+                 calcium: 114, iron: 4.7, iodine: 0, magnesium: 163, potassium: 680, zinc: 2.5, selenium: 2.4 } },
+    { id: 'pistachio', name: 'Pistachios', category: 'cluster', cluster: 'nuts',
+      portions: [['handful (28g)', 28], ['50g', 50], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 562, protein: 20, fiber: 10.6, omega3: 0.25,
+                 vitC: 5.6, vitA: 26, vitD: 0, vitK: 13.2, vitE: 2.86,
+                 b6: 1.7, folate: 51, b12: 0, choline: 71.4,
+                 calcium: 105, iron: 3.9, iodine: 0, magnesium: 121, potassium: 1025, zinc: 2.2, selenium: 7 } },
+    { id: 'cashew', name: 'Cashews', category: 'cluster', cluster: 'nuts',
+      portions: [['handful (28g)', 28], ['50g', 50], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 553, protein: 18, fiber: 3.3, omega3: 0.06,
+                 vitC: 0.5, vitA: 0, vitD: 0, vitK: 34.1, vitE: 0.9,
+                 b6: 0.42, folate: 25, b12: 0, choline: 61,
+                 calcium: 37, iron: 6.7, iodine: 0, magnesium: 292, potassium: 660, zinc: 5.8, selenium: 19.9 } },
+
+    // Seeds (additions)
+    { id: 'flax', name: 'Flaxseed (ground)', category: 'cluster', cluster: 'seeds',
+      portions: [['1 tbsp (10g)', 10], ['2 tbsp (20g)', 20], ['30g', 30]],
+      defaultPortion: 0,
+      per100g: { calories: 534, protein: 18, fiber: 27.3, omega3: 22.8,
+                 vitC: 0.6, vitA: 0, vitD: 0, vitK: 4.3, vitE: 0.3,
+                 b6: 0.47, folate: 87, b12: 0, choline: 78.7,
+                 calcium: 255, iron: 5.7, iodine: 0, magnesium: 392, potassium: 813, zinc: 4.3, selenium: 25.4 } },
+    { id: 'sunflower_seed', name: 'Sunflower seeds', category: 'cluster', cluster: 'seeds',
+      portions: [['handful (15g)', 15], ['30g', 30], ['50g', 50]],
+      defaultPortion: 1,
+      per100g: { calories: 584, protein: 20.8, fiber: 8.6, omega3: 0.07,
+                 vitC: 1.4, vitA: 3, vitD: 0, vitK: 0, vitE: 35.2,
+                 b6: 1.35, folate: 227, b12: 0, choline: 55,
+                 calcium: 78, iron: 5.3, iodine: 0, magnesium: 325, potassium: 645, zinc: 5.0, selenium: 53 } },
+    { id: 'hemp_seed', name: 'Hemp seeds (shelled)', category: 'cluster', cluster: 'seeds',
+      portions: [['1 tbsp (10g)', 10], ['2 tbsp (20g)', 20], ['30g', 30]],
+      defaultPortion: 0,
+      per100g: { calories: 553, protein: 31.6, fiber: 4, omega3: 9.3,
+                 vitC: 0.5, vitA: 1, vitD: 0, vitK: 0, vitE: 0.8,
+                 b6: 0.6, folate: 110, b12: 0, choline: 64,
+                 calcium: 70, iron: 8.0, iodine: 0, magnesium: 700, potassium: 1200, zinc: 9.9, selenium: 0 } },
+    { id: 'sesame', name: 'Sesame seeds', category: 'cluster', cluster: 'seeds',
+      portions: [['1 tbsp (9g)', 9], ['2 tbsp (18g)', 18], ['30g', 30]],
+      defaultPortion: 0,
+      per100g: { calories: 573, protein: 17.7, fiber: 11.8, omega3: 0.38,
+                 vitC: 0, vitA: 0, vitD: 0, vitK: 0, vitE: 0.25,
+                 b6: 0.79, folate: 97, b12: 0, choline: 25.8,
+                 calcium: 975, iron: 14.6, iodine: 0, magnesium: 351, potassium: 468, zinc: 7.8, selenium: 34.4 } },
+
+    // Specialists (additions — each targets a loner nutrient)
+    // Nori iodine varies wildly by species/source/processing (200-3000+ μg/100g).
+    // 2000 is a defensible mid estimate for typical store-bought sheets.
+    { id: 'nori', name: 'Nori (dried seaweed)', category: 'cluster', cluster: 'special',
+      portions: [['1 sheet (3g)', 3], ['~2 sheets (5g)', 5], ['10g', 10]],
+      defaultPortion: 1,
+      per100g: { calories: 35, protein: 5.8, fiber: 0.3, omega3: 0.05,
+                 vitC: 39, vitA: 261, vitD: 0, vitK: 4, vitE: 1,
+                 b6: 0.16, folate: 146, b12: 0.5, choline: 5.2,
+                 calcium: 70, iron: 1.8, iodine: 2000, magnesium: 2, potassium: 356, zinc: 0.93, selenium: 4.5 } },
+    { id: 'nutritional_yeast', name: 'Nutritional yeast (fortified)', category: 'cluster', cluster: 'special',
+      portions: [['1 tbsp (5g)', 5], ['2 tbsp (10g)', 10], ['30g', 30]],
+      defaultPortion: 1,
+      per100g: { calories: 350, protein: 50, fiber: 22, omega3: 0,
+                 vitC: 0, vitA: 0, vitD: 0, vitK: 0, vitE: 0,
+                 b6: 8.7, folate: 1500, b12: 100, choline: 10,
+                 calcium: 30, iron: 4.5, iodine: 0, magnesium: 100, potassium: 1500, zinc: 8, selenium: 5 } },
+    { id: 'natto', name: 'Natto (fermented soy)', category: 'cluster', cluster: 'special',
+      portions: [['1 pack (40g)', 40], ['60g', 60], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 211, protein: 19.4, fiber: 5.4, omega3: 0.65,
+                 vitC: 13, vitA: 0, vitD: 0, vitK: 1100, vitE: 0,
+                 b6: 0.13, folate: 8, b12: 0.1, choline: 95,
+                 calcium: 217, iron: 8.6, iodine: 0, magnesium: 115, potassium: 729, zinc: 3, selenium: 8.8 } },
+    { id: 'liver_beef', name: 'Beef liver (cooked)', category: 'cluster', cluster: 'special',
+      portions: [['30g', 30], ['50g', 50], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 175, protein: 26, fiber: 0, omega3: 0.01,
+                 vitC: 1.6, vitA: 6582, vitD: 1.2, vitK: 3.1, vitE: 0.4,
+                 b6: 0.85, folate: 230, b12: 60, choline: 426,
+                 calcium: 5, iron: 6.5, iodine: 14, magnesium: 19, potassium: 313, zinc: 4.0, selenium: 36 } },
+    // Sardines with bones — multi-specialty: omega-3, B12, calcium (from bones), selenium, vit D.
+    { id: 'sardines', name: 'Sardines (canned, w/ bones)', category: 'cluster', cluster: 'special',
+      portions: [['½ can (60g)', 60], ['1 can (120g)', 120], ['100g', 100]],
+      defaultPortion: 1,
+      per100g: { calories: 208, protein: 25, fiber: 0, omega3: 1.48,
+                 vitC: 0, vitA: 32, vitD: 4.8, vitK: 2.6, vitE: 2.04,
+                 b6: 0.17, folate: 10, b12: 8.9, choline: 75,
+                 calcium: 382, iron: 2.9, iodine: 35, magnesium: 39, potassium: 397, zinc: 1.31, selenium: 52.7 } },
+    // Oysters — extreme zinc, also B12, iron, selenium.
+    { id: 'oysters', name: 'Oysters (cooked)', category: 'cluster', cluster: 'special',
+      portions: [['6 medium (90g)', 90], ['12 medium (180g)', 180], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 102, protein: 11.4, fiber: 0, omega3: 0.75,
+                 vitC: 4.7, vitA: 78, vitD: 8.0, vitK: 0.1, vitE: 1.41,
+                 b6: 0.10, folate: 16, b12: 28, choline: 110,
+                 calcium: 92, iron: 12, iodine: 80, magnesium: 81, potassium: 240, zinc: 78, selenium: 77 } },
+    // Kombu (dried kelp) — extreme iodine. Used in tiny pinches; high portions
+    // exceed UL fast. Iodine value is highly variable (1500–30000+ μg/100g).
+    { id: 'kombu', name: 'Kombu (dried kelp)', category: 'cluster', cluster: 'special',
+      portions: [['1 tsp (1g)', 1], ['5g', 5], ['10g', 10]],
+      defaultPortion: 0,
+      per100g: { calories: 50, protein: 1.7, fiber: 1.6, omega3: 0.04,
+                 vitC: 0, vitA: 9, vitD: 0, vitK: 12.5, vitE: 0.4,
+                 b6: 0, folate: 180, b12: 0, choline: 12,
+                 calcium: 1700, iron: 14, iodine: 20000, magnesium: 121, potassium: 4300, zinc: 2.9, selenium: 0.7 } },
+
+    // ----- COMMON BASELINE FOODS (picker) -----
+    { id: 'rice_white', name: 'White rice (cooked)', category: 'common',
+      portions: [['½ cup (95g)', 95], ['1 cup (190g)', 190], ['200g', 200]],
+      defaultPortion: 1,
+      per100g: { calories: 130, protein: 2.7, fiber: 0.4, omega3: 0.01,
+                 vitC: 0, vitA: 0, vitD: 0, vitK: 0, vitE: 0,
+                 b6: 0.05, folate: 58, b12: 0, choline: 2.1,
+                 calcium: 10, iron: 0.2, iodine: 1, magnesium: 12, potassium: 35, zinc: 0.5, selenium: 7.5 } },
+    { id: 'rice_brown', name: 'Brown rice (cooked)', category: 'common',
+      portions: [['½ cup (98g)', 98], ['1 cup (195g)', 195], ['200g', 200]],
+      defaultPortion: 1,
+      per100g: { calories: 123, protein: 2.7, fiber: 1.6, omega3: 0.02,
+                 vitC: 0, vitA: 0, vitD: 0, vitK: 0.6, vitE: 0.05,
+                 b6: 0.14, folate: 9, b12: 0, choline: 9,
+                 calcium: 3, iron: 0.4, iodine: 0, magnesium: 39, potassium: 43, zinc: 0.6, selenium: 9.8 } },
+    { id: 'chicken_breast', name: 'Chicken breast (cooked)', category: 'common',
+      portions: [['100g', 100], ['150g', 150], ['200g', 200]],
+      defaultPortion: 1,
+      per100g: { calories: 165, protein: 31, fiber: 0, omega3: 0.04,
+                 vitC: 0, vitA: 6, vitD: 0.1, vitK: 0.3, vitE: 0.27,
+                 b6: 0.6, folate: 4, b12: 0.3, choline: 73,
+                 calcium: 15, iron: 1.0, iodine: 7, magnesium: 29, potassium: 256, zinc: 1.0, selenium: 27 } },
+    { id: 'beef_lean', name: 'Beef (lean ground, cooked)', category: 'common',
+      portions: [['100g', 100], ['150g', 150], ['200g', 200]],
+      defaultPortion: 0,
+      per100g: { calories: 217, protein: 26, fiber: 0, omega3: 0.04,
+                 vitC: 0, vitA: 0, vitD: 0.1, vitK: 1.6, vitE: 0.4,
+                 b6: 0.36, folate: 8, b12: 2.2, choline: 80,
+                 calcium: 18, iron: 2.7, iodine: 12, magnesium: 21, potassium: 318, zinc: 5.5, selenium: 21 } },
+    { id: 'pork_loin', name: 'Pork loin (cooked)', category: 'common',
+      portions: [['100g', 100], ['150g', 150], ['200g', 200]],
+      defaultPortion: 0,
+      per100g: { calories: 197, protein: 26, fiber: 0, omega3: 0.05,
+                 vitC: 0, vitA: 2, vitD: 1.5, vitK: 0, vitE: 0.27,
+                 b6: 0.55, folate: 4, b12: 0.7, choline: 95,
+                 calcium: 16, iron: 0.8, iodine: 1, magnesium: 27, potassium: 423, zinc: 2.5, selenium: 35 } },
+    { id: 'egg', name: 'Egg (whole)', category: 'common',
+      portions: [['1 egg (50g)', 50], ['2 eggs (100g)', 100], ['3 eggs (150g)', 150]],
+      defaultPortion: 0,
+      per100g: { calories: 155, protein: 13, fiber: 0, omega3: 0.07,
+                 vitC: 0, vitA: 160, vitD: 2.0, vitK: 0.3, vitE: 1.05,
+                 b6: 0.17, folate: 47, b12: 0.9, choline: 294,
+                 calcium: 50, iron: 1.2, iodine: 27, magnesium: 10, potassium: 126, zinc: 1.0, selenium: 30 } },
+    { id: 'bread_wheat', name: 'Whole wheat bread', category: 'common',
+      portions: [['1 slice (30g)', 30], ['2 slices (60g)', 60], ['3 slices (90g)', 90]],
+      defaultPortion: 1,
+      per100g: { calories: 247, protein: 13, fiber: 7, omega3: 0.13,
+                 vitC: 0, vitA: 0, vitD: 0, vitK: 7.8, vitE: 0.5,
+                 b6: 0.23, folate: 42, b12: 0, choline: 32,
+                 calcium: 107, iron: 2.5, iodine: 17, magnesium: 76, potassium: 230, zinc: 1.8, selenium: 30 } },
+    { id: 'banana', name: 'Banana', category: 'common',
+      portions: [['1 medium (118g)', 118], ['1 large (136g)', 136], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 89, protein: 1.1, fiber: 2.6, omega3: 0.03,
+                 vitC: 8.7, vitA: 3, vitD: 0, vitK: 0.5, vitE: 0.1,
+                 b6: 0.37, folate: 20, b12: 0, choline: 9.8,
+                 calcium: 5, iron: 0.3, iodine: 0, magnesium: 27, potassium: 358, zinc: 0.15, selenium: 1.0 } },
+    { id: 'apple', name: 'Apple (with skin)', category: 'common',
+      portions: [['1 small (149g)', 149], ['1 medium (182g)', 182], ['100g', 100]],
+      defaultPortion: 1,
+      per100g: { calories: 52, protein: 0.3, fiber: 2.4, omega3: 0.01,
+                 vitC: 4.6, vitA: 3, vitD: 0, vitK: 2.2, vitE: 0.18,
+                 b6: 0.04, folate: 3, b12: 0, choline: 3.4,
+                 calcium: 6, iron: 0.1, iodine: 0, magnesium: 5, potassium: 107, zinc: 0.04, selenium: 0 } },
+    { id: 'yogurt_greek', name: 'Greek yogurt (whole milk)', category: 'common',
+      portions: [['½ cup (115g)', 115], ['1 cup (227g)', 227], ['170g', 170]],
+      defaultPortion: 0,
+      per100g: { calories: 100, protein: 9, fiber: 0, omega3: 0.04,
+                 vitC: 0, vitA: 27, vitD: 0.1, vitK: 0.1, vitE: 0.05,
+                 b6: 0.05, folate: 7, b12: 0.5, choline: 15,
+                 calcium: 100, iron: 0.04, iodine: 14, magnesium: 11, potassium: 141, zinc: 0.5, selenium: 9.7 } },
+    { id: 'salmon', name: 'Salmon (Atlantic, cooked)', category: 'common',
+      portions: [['85g (3 oz)', 85], ['150g', 150], ['200g', 200]],
+      defaultPortion: 0,
+      per100g: { calories: 206, protein: 22, fiber: 0, omega3: 2.3,
+                 vitC: 0, vitA: 14, vitD: 13, vitK: 0.4, vitE: 1.1,
+                 b6: 0.6, folate: 35, b12: 2.8, choline: 78,
+                 calcium: 13, iron: 0.34, iodine: 30, magnesium: 29, potassium: 384, zinc: 0.43, selenium: 41 } },
+    { id: 'tofu_firm', name: 'Tofu (firm)', category: 'common',
+      portions: [['100g', 100], ['150g', 150], ['200g', 200]],
+      defaultPortion: 0,
+      per100g: { calories: 144, protein: 17, fiber: 2.3, omega3: 0.4,
+                 vitC: 0.2, vitA: 5, vitD: 0, vitK: 2.3, vitE: 0,
+                 b6: 0.08, folate: 19, b12: 0, choline: 28,
+                 calcium: 372, iron: 2.7, iodine: 5, magnesium: 60, potassium: 121, zinc: 1.6, selenium: 17 } },
+    { id: 'cheddar', name: 'Cheddar cheese', category: 'common',
+      portions: [['1 slice (28g)', 28], ['50g', 50], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 403, protein: 25, fiber: 0, omega3: 0.4,
+                 vitC: 0, vitA: 265, vitD: 0.6, vitK: 2.8, vitE: 0.7,
+                 b6: 0.07, folate: 27, b12: 1.1, choline: 16,
+                 calcium: 721, iron: 0.7, iodine: 23, magnesium: 28, potassium: 98, zinc: 3.1, selenium: 14 } },
+    { id: 'milk_whole', name: 'Whole milk', category: 'common',
+      portions: [['1 cup (240g)', 240], ['½ cup (120g)', 120], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 61, protein: 3.2, fiber: 0, omega3: 0.07,
+                 vitC: 0, vitA: 46, vitD: 1.3, vitK: 0.3, vitE: 0.07,
+                 b6: 0.04, folate: 5, b12: 0.4, choline: 14,
+                 calcium: 113, iron: 0.03, iodine: 22, magnesium: 10, potassium: 132, zinc: 0.4, selenium: 3.7 } },
+    { id: 'olive_oil', name: 'Olive oil', category: 'common',
+      portions: [['1 tsp (5g)', 5], ['1 tbsp (15g)', 15], ['30g', 30]],
+      defaultPortion: 1,
+      per100g: { calories: 884, protein: 0, fiber: 0, omega3: 0.76,
+                 vitC: 0, vitA: 0, vitD: 0, vitK: 60, vitE: 14,
+                 b6: 0, folate: 0, b12: 0, choline: 0.3,
+                 calcium: 1, iron: 0.6, iodine: 0, magnesium: 0, potassium: 1, zinc: 0, selenium: 0 } },
+
+    // Non-food contributor — bare-skin midday sun. `hideGrams: true` keeps it out
+    // of the gram total and shows portions as "20 min" instead of "20g".
+    // Vitamin D synthesis varies hugely (skin tone, latitude, season, exposed
+    // area). Numbers here are rough averages for tropical/subtropical midday.
+    { id: 'sunlight', name: 'Sunlight (midday)', category: 'common', hideGrams: true,
+      portions: [['10 min', 10], ['20 min', 20], ['30 min', 30]],
+      defaultPortion: 1,
+      per100g: { calories: 0, protein: 0, fiber: 0, omega3: 0,
+                 vitC: 0, vitA: 0, vitD: 100, vitK: 0, vitE: 0,
+                 b6: 0, folate: 0, b12: 0, choline: 0,
+                 calcium: 0, iron: 0, iodine: 0, magnesium: 0, potassium: 0, zinc: 0, selenium: 0 } },
+
+    { id: 'potato', name: 'Potato (boiled)', category: 'common',
+      portions: [['1 small (138g)', 138], ['1 medium (173g)', 173], ['100g', 100]],
+      defaultPortion: 1,
+      per100g: { calories: 87, protein: 1.9, fiber: 1.8, omega3: 0.02,
+                 vitC: 13, vitA: 0, vitD: 0, vitK: 2.2, vitE: 0.01,
+                 b6: 0.30, folate: 10, b12: 0, choline: 14,
+                 calcium: 5, iron: 0.3, iodine: 4, magnesium: 22, potassium: 379, zinc: 0.3, selenium: 0.3 } },
+    { id: 'sweet_potato', name: 'Sweet potato (baked)', category: 'common',
+      portions: [['1 medium (114g)', 114], ['1 cup (200g)', 200], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 90, protein: 2.0, fiber: 3.3, omega3: 0.01,
+                 vitC: 19.6, vitA: 961, vitD: 0, vitK: 2.3, vitE: 0.71,
+                 b6: 0.29, folate: 6, b12: 0, choline: 13,
+                 calcium: 38, iron: 0.7, iodine: 0, magnesium: 27, potassium: 475, zinc: 0.32, selenium: 0.2 } },
+    { id: 'pasta_cooked', name: 'Pasta (cooked)', category: 'common',
+      portions: [['1 cup (140g)', 140], ['200g', 200], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 158, protein: 5.8, fiber: 1.8, omega3: 0.04,
+                 vitC: 0, vitA: 0, vitD: 0, vitK: 0, vitE: 0.06,
+                 b6: 0.05, folate: 7, b12: 0, choline: 12,
+                 calcium: 7, iron: 1.3, iodine: 0, magnesium: 18, potassium: 44, zinc: 0.5, selenium: 26.4 } },
+    { id: 'oatmeal_cooked', name: 'Oatmeal (cooked)', category: 'common',
+      portions: [['½ cup (117g)', 117], ['1 cup (234g)', 234], ['100g', 100]],
+      defaultPortion: 1,
+      per100g: { calories: 71, protein: 2.5, fiber: 1.7, omega3: 0.04,
+                 vitC: 0, vitA: 0, vitD: 0, vitK: 0.3, vitE: 0.08,
+                 b6: 0.005, folate: 6, b12: 0, choline: 7,
+                 calcium: 9, iron: 0.9, iodine: 0, magnesium: 26, potassium: 70, zinc: 1.0, selenium: 4.4 } },
+    { id: 'lentils', name: 'Lentils (cooked)', category: 'common',
+      portions: [['½ cup (99g)', 99], ['1 cup (198g)', 198], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 116, protein: 9, fiber: 7.9, omega3: 0.04,
+                 vitC: 1.5, vitA: 0, vitD: 0, vitK: 1.7, vitE: 0.11,
+                 b6: 0.18, folate: 181, b12: 0, choline: 32,
+                 calcium: 19, iron: 3.3, iodine: 0, magnesium: 36, potassium: 369, zinc: 1.3, selenium: 2.8 } },
+    { id: 'chickpeas', name: 'Chickpeas (cooked)', category: 'common',
+      portions: [['½ cup (82g)', 82], ['1 cup (164g)', 164], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 164, protein: 8.9, fiber: 7.6, omega3: 0.05,
+                 vitC: 1.3, vitA: 1, vitD: 0, vitK: 4, vitE: 0.35,
+                 b6: 0.14, folate: 172, b12: 0, choline: 42.8,
+                 calcium: 49, iron: 2.9, iodine: 0, magnesium: 48, potassium: 291, zinc: 1.5, selenium: 3.7 } },
+    { id: 'tuna_canned', name: 'Tuna (canned in water)', category: 'common',
+      portions: [['½ can (75g)', 75], ['1 can (140g)', 140], ['100g', 100]],
+      defaultPortion: 1,
+      per100g: { calories: 116, protein: 26, fiber: 0, omega3: 0.21,
+                 vitC: 0, vitA: 17, vitD: 1.6, vitK: 0, vitE: 0.34,
+                 b6: 0.32, folate: 4, b12: 1.2, choline: 28,
+                 calcium: 11, iron: 1.5, iodine: 14, magnesium: 27, potassium: 237, zinc: 0.5, selenium: 80.4 } },
+    { id: 'shrimp', name: 'Shrimp (cooked)', category: 'common',
+      portions: [['85g (3 oz)', 85], ['150g', 150], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 99, protein: 24, fiber: 0, omega3: 0.32,
+                 vitC: 0, vitA: 54, vitD: 0.1, vitK: 0.3, vitE: 1.0,
+                 b6: 0.10, folate: 19, b12: 1.7, choline: 81,
+                 calcium: 70, iron: 0.5, iodine: 35, magnesium: 39, potassium: 259, zinc: 1.6, selenium: 38.7 } },
+    { id: 'avocado', name: 'Avocado', category: 'common',
+      portions: [['½ medium (100g)', 100], ['1 medium (200g)', 200], ['50g', 50]],
+      defaultPortion: 0,
+      per100g: { calories: 160, protein: 2, fiber: 6.7, omega3: 0.11,
+                 vitC: 10, vitA: 7, vitD: 0, vitK: 21, vitE: 2.07,
+                 b6: 0.26, folate: 81, b12: 0, choline: 14.2,
+                 calcium: 12, iron: 0.55, iodine: 0, magnesium: 29, potassium: 485, zinc: 0.64, selenium: 0.4 } },
+  ];
+
+  // ============================================================
+  //  STATE
+  // ============================================================
+
+  const STATE_KEY = 'nutrient-cheat-code-v1';
+
+  function loadState() {
+    const blank = { selections: {}, untracked: [], view: 'common', baselineFoods: [] };
+    const validViews = ['common', 'all'];
+    try {
+      const saved = JSON.parse(localStorage.getItem(STATE_KEY) || '{}');
+      return {
+        ...blank,
+        ...saved,
+        selections: { ...blank.selections, ...(saved.selections || {}) },
+        baselineFoods: Array.isArray(saved.baselineFoods) ? saved.baselineFoods : [],
+        view: validViews.includes(saved.view) ? saved.view : blank.view,
+      };
+    } catch {
+      return blank;
+    }
+  }
+  function saveState() {
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+  }
+
+  let state = loadState();
+  let hoveredFoodId = null; // runtime-only; not persisted
+
+  // ============================================================
+  //  COMPUTE
+  // ============================================================
+
+  function computeTotals() {
+    if (hoveredFoodId) {
+      const food = FOODS.find(f => f.id === hoveredFoodId);
+      if (food) return computeTotalsForFood(food);
+    }
+    const totals = { calories: 0, grams: 0 };
+    NUTRIENTS.forEach(n => totals[n.id] = 0);
+
+    FOODS.forEach(food => {
+      const portionIdx = state.selections[food.id];
+      if (portionIdx == null) return;
+      const safeIdx = (portionIdx >= 0 && portionIdx < food.portions.length) ? portionIdx : food.defaultPortion;
+      const grams = food.portions[safeIdx][1];
+      const factor = grams / 100;
+      if (!food.hideGrams) totals.grams += grams;
+      totals.calories += (food.per100g.calories || 0) * factor;
+      NUTRIENTS.forEach(n => {
+        totals[n.id] += (food.per100g[n.id] || 0) * factor;
+      });
+    });
+    return totals;
+  }
+
+  // Single-food totals — used when hovering a food row to preview its contribution alone.
+  function computeTotalsForFood(food) {
+    const totals = { calories: 0, grams: 0 };
+    NUTRIENTS.forEach(n => totals[n.id] = 0);
+    const rawIdx = state.selections[food.id];
+    const portionIdx = (rawIdx == null) ? food.defaultPortion : rawIdx;
+    const safeIdx = (portionIdx >= 0 && portionIdx < food.portions.length) ? portionIdx : food.defaultPortion;
+    const grams = food.portions[safeIdx][1];
+    const factor = grams / 100;
+    totals.grams = food.hideGrams ? 0 : grams;
+    totals.calories = (food.per100g.calories || 0) * factor;
+    NUTRIENTS.forEach(n => {
+      totals[n.id] = (food.per100g[n.id] || 0) * factor;
+    });
+    return totals;
+  }
+
+  function pctOfDV(nutrientId, totals) {
+    const n = NUTRIENTS.find(x => x.id === nutrientId);
+    if (!n || !n.dv) return 0;
+    return (totals[nutrientId] / n.dv) * 100;
+  }
+
+  // Returns a short label for a nutrient (e.g., "Vit C", "B12", "Selenium").
+  function shortLabel(label) {
+    return label
+      .replace(/Vitamin (B\d+)/, '$1')   // "Vitamin B12" → "B12"
+      .replace('Vitamin ', 'Vit ')       // "Vitamin C" → "Vit C"
+      .replace(/ \([^)]+\)/, '');        // "Folate (B9)" → "Folate"
+  }
+
+  // Returns the food's "specialty" tags — nutrients hitting ≥40% DV at default
+  // portion, sorted by descending coverage, capped at 3. Used to render hints
+  // next to food names like "Kale (Vit K)" or "Beef liver (B12, Vit A)".
+  // Threshold matches the bar color-coding (40% = amber threshold).
+  const SPECIALTY_THRESHOLD = 40;
+  const SPECIALTY_MAX = 3;
+  function specialtyTags(food) {
+    const portion = food.portions[food.defaultPortion];
+    if (!portion) return [];
+    const factor = portion[1] / 100;
+    const tagged = [];
+    for (const n of NUTRIENTS) {
+      if (!n.dv) continue;
+      const pct = ((food.per100g[n.id] || 0) * factor / n.dv) * 100;
+      if (pct >= SPECIALTY_THRESHOLD) {
+        tagged.push({ label: shortLabel(n.label), pct });
+      }
+    }
+    tagged.sort((a, b) => b.pct - a.pct);
+    return tagged.slice(0, SPECIALTY_MAX);
+  }
+
+  // Returns top N foods by % DV at default portion, descending.
+  // Used by the bar-label hover tooltip ("show me where this nutrient comes from
+  // and how much I'd actually get from a typical serving").
+  function topFoodsByPctDV(nutrientId, n = 5) {
+    const nut = NUTRIENTS.find(x => x.id === nutrientId);
+    if (!nut || !nut.dv) return [];
+    return FOODS
+      .map(f => {
+        const portion = f.portions[f.defaultPortion];
+        if (!portion) return null;
+        const factor = portion[1] / 100;
+        const value = (f.per100g[nutrientId] || 0) * factor;
+        const pct = (value / nut.dv) * 100;
+        return { food: f, portion, value, pct };
+      })
+      .filter(x => x && x.value > 0)
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, n);
+  }
+
+  function colorForPct(pct, ulPct) {
+    if (ulPct != null && pct > ulPct) return 'var(--bar-over)';
+    if (pct >= 80) return 'var(--bar-good)';
+    if (pct >= 40) return 'var(--bar-near)';
+    return 'var(--bar-under)';
+  }
+
+  // Map a "% of DV" value to a position on the bar track (0–100; >100 overflows).
+  // DV always sits at 60% of the track for visual consistency across all nutrients.
+  // UL nutrients: track right edge (100%) = UL.
+  // Non-UL nutrients: track right edge = 200% DV (arbitrary safe headroom).
+  function pctToTrackPos(pct, ulPct) {
+    if (pct <= 100) return (pct / 100) * 60;
+    const headroomPct = ulPct ?? 200;
+    return 60 + ((pct - 100) / (headroomPct - 100)) * 40;
+  }
+
+  // ============================================================
+  //  RENDER
+  // ============================================================
+
+  function render() {
+    renderFoods();
+    renderTotals();
+    renderBars();
+    renderViewToggle();
+  }
+
+  // Attach preview hover to a specific trigger element (typically the food name)
+  // so checkbox/dropdown interaction doesn't fire the preview. The row still gets
+  // the visual highlight so the user can see which food is being previewed.
+  function showNutrientTooltip(nutrient, anchorEl) {
+    const tooltip = document.getElementById('nutrient-tooltip');
+    const top = topFoodsByPctDV(nutrient.id, 5);
+    if (top.length === 0) { hideNutrientTooltip(); return; }
+    tooltip.innerHTML = '';
+
+    const title = document.createElement('div');
+    title.className = 'tt-title';
+    title.textContent = `Top ${nutrient.label} sources (default portion)`;
+    tooltip.appendChild(title);
+
+    for (const item of top) {
+      const row = document.createElement('div');
+      row.className = 'tt-row';
+      const name = document.createElement('span');
+      name.className = 'tt-name';
+      const portionLabel = item.food.hideGrams
+        ? item.portion[0]
+        : `${item.portion[1]}g`;
+      name.textContent = `${item.food.name} (${portionLabel})`;
+      const val = document.createElement('span');
+      val.className = 'tt-val';
+      val.textContent = `${Math.round(item.pct)}%`;
+      row.appendChild(name);
+      row.appendChild(val);
+      tooltip.appendChild(row);
+    }
+
+    // Position fixed, just below the anchor row, clamped to the viewport.
+    const rect = anchorEl.getBoundingClientRect();
+    tooltip.classList.add('visible');
+    const tipRect = tooltip.getBoundingClientRect();
+    let top_ = rect.bottom + 4;
+    let left = Math.max(8, rect.left);
+    if (left + tipRect.width > window.innerWidth - 8) {
+      left = window.innerWidth - tipRect.width - 8;
+    }
+    if (top_ + tipRect.height > window.innerHeight - 8) {
+      top_ = Math.max(8, rect.top - tipRect.height - 4);
+    }
+    tooltip.style.top = `${top_}px`;
+    tooltip.style.left = `${left}px`;
+  }
+
+  function hideNutrientTooltip() {
+    document.getElementById('nutrient-tooltip').classList.remove('visible');
+  }
+
+  function attachHoverPreview(trigger, row, food) {
+    trigger.addEventListener('mouseenter', () => {
+      hoveredFoodId = food.id;
+      row.classList.add('hover-preview');
+      renderTotals();
+      renderBars();
+    });
+    trigger.addEventListener('mouseleave', () => {
+      hoveredFoodId = null;
+      row.classList.remove('hover-preview');
+      renderTotals();
+      renderBars();
+    });
+  }
+
+  function renderFoods() {
+    const container = document.getElementById('foods');
+    container.innerHTML = '';
+    renderBaseline(container);
+    renderClusters(container);
+  }
+
+  // ----- BASELINE -----
+
+  function renderBaseline(container) {
+    const wrap = document.createElement('div');
+    wrap.className = 'baseline';
+
+    const heading = document.createElement('div');
+    heading.className = 'baseline-label';
+
+    const title = document.createElement('span');
+    title.textContent = 'Daily baseline';
+    heading.appendChild(title);
+
+    if (state.baselineFoods.length > 0) {
+      const allChecked = state.baselineFoods.every(id => state.selections[id] != null);
+      const toggle = document.createElement('span');
+      toggle.className = 'check-all-btn';
+      toggle.textContent = allChecked ? 'uncheck all' : 'check all';
+      toggle.addEventListener('click', () => {
+        state.baselineFoods.forEach(id => {
+          if (allChecked) {
+            state.selections[id] = null;
+          } else {
+            const food = FOODS.find(f => f.id === id);
+            if (food) state.selections[id] = food.defaultPortion;
+          }
+        });
+        saveState();
+        render();
+      });
+      heading.appendChild(toggle);
+    }
+    wrap.appendChild(heading);
+
+    state.baselineFoods.forEach(foodId => {
+      const food = FOODS.find(f => f.id === foodId);
+      if (!food) return;
+      wrap.appendChild(makeBaselineRow(food));
+    });
+
+    wrap.appendChild(makeBaselinePicker());
+    container.appendChild(wrap);
+  }
+
+  function makeBaselinePicker() {
+    const picker = document.createElement('select');
+    picker.className = 'baseline-picker';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = '+ add a daily food…';
+    picker.appendChild(placeholder);
+    FOODS.filter(f => f.category === 'common' && !state.baselineFoods.includes(f.id))
+      .forEach(food => {
+        const opt = document.createElement('option');
+        opt.value = food.id;
+        opt.textContent = food.name;
+        picker.appendChild(opt);
+      });
+    picker.addEventListener('change', () => {
+      if (!picker.value) return;
+      addBaselineFood(picker.value);
+    });
+    return picker;
+  }
+
+  function addBaselineFood(foodId) {
+    const food = FOODS.find(f => f.id === foodId);
+    if (!food || state.baselineFoods.includes(foodId)) return;
+    state.baselineFoods.push(foodId);
+    state.selections[foodId] = food.defaultPortion;
+    saveState();
+    render();
+  }
+
+  function removeBaselineFood(foodId) {
+    state.baselineFoods = state.baselineFoods.filter(id => id !== foodId);
+    state.selections[foodId] = null;
+    saveState();
+    render();
+  }
+
+  function makeBaselineRow(food) {
+    const checked = state.selections[food.id] != null;
+    const portionIdx = checked ? state.selections[food.id] : food.defaultPortion;
+
+    const row = document.createElement('div');
+    row.className = 'baseline-row' + (checked ? '' : ' unchecked');
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = checked;
+    cb.addEventListener('change', () => {
+      state.selections[food.id] = cb.checked ? food.defaultPortion : null;
+      saveState();
+      render();
+    });
+
+    const name = document.createElement('span');
+    name.className = 'food-name';
+    name.textContent = food.name;
+    const tags = specialtyTags(food);
+    if (tags.length > 0) {
+      const tagEl = document.createElement('span');
+      tagEl.className = 'specialty';
+      tagEl.textContent = `(${tags.map(t => t.label).join(', ')})`;
+      name.appendChild(tagEl);
+    }
+    attachHoverPreview(name, row, food);
+
+    const sel = document.createElement('select');
+    food.portions.forEach(([label, g], i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = food.hideGrams ? label : (label.includes('(') ? label : `${label} (${g}g)`);
+      if (i === portionIdx) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', () => {
+      state.selections[food.id] = parseInt(sel.value, 10);
+      saveState();
+      render();
+    });
+
+    const removeBtn = document.createElement('span');
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = '×';
+    removeBtn.title = 'Remove from baseline';
+    removeBtn.addEventListener('click', () => removeBaselineFood(food.id));
+
+    row.appendChild(cb);
+    row.appendChild(name);
+    row.appendChild(sel);
+    row.appendChild(removeBtn);
+    return row;
+  }
+
+  // ----- CLUSTERS -----
+
+  function renderClusters(container) {
+    CLUSTERS.forEach(cluster => {
+      const clusterFoods = FOODS.filter(f => f.category === 'cluster' && f.cluster === cluster.id);
+      if (clusterFoods.length === 0) return;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'cluster';
+      const heading = document.createElement('div');
+      heading.className = 'cluster-label';
+      heading.textContent = cluster.label;
+      wrap.appendChild(heading);
+
+      clusterFoods.forEach(food => wrap.appendChild(makeClusterRow(food)));
+      container.appendChild(wrap);
+    });
+  }
+
+  function makeClusterRow(food) {
+    const checked = state.selections[food.id] != null;
+    const portionIdx = checked ? state.selections[food.id] : food.defaultPortion;
+
+    const row = document.createElement('div');
+    row.className = 'food' + (checked ? '' : ' unchecked');
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = checked;
+    cb.addEventListener('change', () => {
+      state.selections[food.id] = cb.checked ? food.defaultPortion : null;
+      saveState();
+      render();
+    });
+
+    const name = document.createElement('span');
+    name.className = 'food-name';
+    name.textContent = food.name;
+    const tags = specialtyTags(food);
+    if (tags.length > 0) {
+      const tagEl = document.createElement('span');
+      tagEl.className = 'specialty';
+      tagEl.textContent = `(${tags.map(t => t.label).join(', ')})`;
+      name.appendChild(tagEl);
+    }
+    attachHoverPreview(name, row, food);
+
+    const sel = document.createElement('select');
+    food.portions.forEach(([label, g], i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = food.hideGrams ? label : (label.includes('(') ? label : `${label} (${g}g)`);
+      if (i === portionIdx) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', () => {
+      state.selections[food.id] = parseInt(sel.value, 10);
+      saveState();
+      render();
+    });
+
+    row.appendChild(cb);
+    row.appendChild(name);
+    row.appendChild(sel);
+    return row;
+  }
+
+  // ----- TOTALS / BARS -----
+
+  function renderTotals() {
+    const totals = computeTotals();
+    document.getElementById('total-cal').textContent = Math.round(totals.calories);
+    document.getElementById('total-g').textContent = Math.round(totals.grams);
+  }
+
+  function renderViewToggle() {
+    document.querySelectorAll('#view-toggle button').forEach(b =>
+      b.classList.toggle('active', b.dataset.view === state.view)
+    );
+  }
+
+  function renderBars() {
+    const container = document.getElementById('bars');
+    const heading = document.getElementById('bars-heading');
+    container.innerHTML = '';
+    const totals = computeTotals();
+    const visible = state.view === 'common' ? NUTRIENTS.filter(n => n.gap) : NUTRIENTS;
+
+    if (hoveredFoodId) {
+      const food = FOODS.find(f => f.id === hoveredFoodId);
+      if (food) {
+        const rawIdx = state.selections[food.id];
+        const idx = (rawIdx == null) ? food.defaultPortion : rawIdx;
+        const portion = food.portions[idx] || food.portions[food.defaultPortion];
+        const portionDesc = food.hideGrams ? portion[0] : `${portion[1]}g`;
+        heading.textContent = `Preview · ${food.name} (${portionDesc})`;
+      } else {
+        heading.textContent = 'Preview';
+      }
+    } else if (state.view === 'common') {
+      heading.textContent = `Common gaps · ${visible.length} of ${NUTRIENTS.length}`;
+    } else {
+      heading.textContent = `All nutrients · ${NUTRIENTS.length}`;
+    }
+    renderNutrientBars(container, totals, visible);
+  }
+
+  function renderNutrientBars(container, totals, visibleNutrients) {
+    const tracked = visibleNutrients.filter(n => !state.untracked.includes(n.id));
+    const untracked = visibleNutrients.filter(n => state.untracked.includes(n.id));
+
+    tracked.forEach(n => container.appendChild(makeNutrientBar(n, totals, false)));
+
+    if (untracked.length > 0) {
+      const sep = document.createElement('div');
+      sep.className = 'untracked-divider';
+      sep.textContent = 'Untracked';
+      container.appendChild(sep);
+      untracked.forEach(n => container.appendChild(makeNutrientBar(n, totals, true)));
+    }
+  }
+
+  function makeNutrientBar(nutrient, totals, isUntracked) {
+    const pct = pctOfDV(nutrient.id, totals);
+    const ulPct = nutrient.ul ? (nutrient.ul / nutrient.dv) * 100 : null;
+    const trackPos = pctToTrackPos(pct, ulPct);
+    const fillWidth = Math.min(100, trackPos);
+    const dvTickPos = 60;
+    const ulTickPos = ulPct != null ? 100 : null;
+    const color = colorForPct(pct, ulPct);
+
+    const row = document.createElement('div');
+    row.className = 'bar-row' + (isUntracked ? ' untracked' : '');
+
+    const toggle = document.createElement('div');
+    toggle.className = 'bar-track-toggle';
+    toggle.textContent = isUntracked ? '○' : '●';
+    toggle.title = isUntracked ? 'Track this nutrient' : 'Untrack this nutrient';
+    toggle.addEventListener('click', () => {
+      if (isUntracked) {
+        state.untracked = state.untracked.filter(id => id !== nutrient.id);
+      } else {
+        state.untracked.push(nutrient.id);
+      }
+      saveState();
+      renderBars();
+    });
+
+    const label = document.createElement('div');
+    label.className = 'bar-label';
+    label.textContent = nutrient.label;
+    label.addEventListener('mouseenter', () => showNutrientTooltip(nutrient, label));
+    label.addEventListener('mouseleave', hideNutrientTooltip);
+
+    const track = document.createElement('div');
+    track.className = 'bar-track';
+    const fill = document.createElement('div');
+    fill.className = 'bar-fill';
+    fill.style.width = fillWidth + '%';
+    fill.style.background = color;
+    track.appendChild(fill);
+    const dvTick = document.createElement('div');
+    dvTick.className = 'bar-tick';
+    dvTick.style.left = dvTickPos + '%';
+    track.appendChild(dvTick);
+    if (ulTickPos != null) {
+      const ulTick = document.createElement('div');
+      ulTick.className = 'bar-tick ul';
+      ulTick.style.left = ulTickPos + '%';
+      track.appendChild(ulTick);
+    }
+
+    const pctEl = document.createElement('div');
+    pctEl.className = 'bar-pct';
+    pctEl.textContent = Math.round(pct) + '%';
+
+    row.appendChild(toggle);
+    row.appendChild(label);
+    row.appendChild(track);
+    row.appendChild(pctEl);
+    return row;
+  }
+
+  function renderClusterBars(container, totals) {
+    CLUSTERS.forEach(cluster => {
+      const primary = cluster.primary.filter(id => !state.untracked.includes(id));
+      if (primary.length === 0) return;
+      // Cap each primary nutrient at 100% before averaging — a cluster is "full" at DV across primaries.
+      const avgPct = primary.reduce(
+        (sum, id) => sum + Math.min(pctOfDV(id, totals), 100),
+        0
+      ) / primary.length;
+      const fillWidth = avgPct; // 0–100, no overflow possible
+      const color = colorForPct(avgPct, null);
+
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+
+      const spacer = document.createElement('div');
+      const label = document.createElement('div');
+      label.className = 'bar-label';
+      label.textContent = cluster.label;
+
+      const track = document.createElement('div');
+      track.className = 'bar-track';
+      const fill = document.createElement('div');
+      fill.className = 'bar-fill';
+      fill.style.width = fillWidth + '%';
+      fill.style.background = color;
+      track.appendChild(fill);
+      // No DV/UL ticks for cluster bars — full bar = cluster fully covered.
+
+      const pctEl = document.createElement('div');
+      pctEl.className = 'bar-pct';
+      pctEl.textContent = Math.round(avgPct) + '%';
+
+      row.appendChild(spacer);
+      row.appendChild(label);
+      row.appendChild(track);
+      row.appendChild(pctEl);
+      container.appendChild(row);
+    });
+  }
+
+  // ============================================================
+  //  EVENTS
+  // ============================================================
+
+  document.querySelectorAll('#view-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.view = btn.dataset.view;
+      saveState();
+      renderViewToggle();
+      renderBars();
+    });
+  });
+
+  // ============================================================
+  //  GO
+  // ============================================================
+  render();
+  </script>
+</body>
+</html>
