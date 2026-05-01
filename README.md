@@ -1,89 +1,68 @@
 # Nutrient Cheat Code
 
-Find efficient combinations of nutrient-dense foods that cover most of your daily nutrient targets in a single small meal — so the rest of the day is yours.
+**[→ Open the tool](https://carefulcamel61097.github.io/nutrient-cheat-code/)**
 
-> Eat the right tiny set of foods once a day. Track which nutrients you cover and which are gaps. Eat whatever you want for the rest of the day.
+Find a tiny set of nutrient-dense foods that covers most of your daily nutrient targets in one small meal — so the rest of the day is yours.
 
-A single self-contained HTML file. Works offline. No build step, no framework, no network.
+> Eat the right small set of foods once a day. See which nutrients you cover and which are gaps. Eat whatever you want for the rest of the day.
 
-## Run it
+## How to use it
 
-**Local**: Open `index.html` in any modern browser. That's it.
+1. **Add what you eat anyway.** In the *Daily baseline* section at the top, use the picker to add common foods you already eat on a typical day — rice, chicken, eggs, bread, yogurt, fruit, etc. Pick a portion size from the dropdown next to each one. (Sunlight is in there too, as a non-food vitamin D contributor.)
 
-**Hosted**: <https://carefulcamel61097.github.io/nutrient-cheat-code/>
+2. **Watch the bars.** The horizontal bars on the right show how close you are to your daily target for each nutrient. The tick mark is 100% (the FDA Daily Value). Where it matters, a second tick on the right marks the upper safe limit.
+   - **Red** — under 40% of target
+   - **Amber** — 40–79%
+   - **Green** — 80% or more (good enough — DVs already include a safety margin)
+   - **Bright red** — over the upper limit (only relevant for a few nutrients like selenium, vitamin A, iron)
 
-To deploy your own copy on GitHub Pages: fork or clone, push to your repo, then **Settings → Pages → Deploy from branch → main → / (root) → Save**. Site goes live in a minute or two.
+3. **Fill the gaps with power foods.** Below the baseline, the curated *power foods* are grouped into clusters (leafy greens, colorful fruit/veg, nuts, seeds, specialists). Tick the ones you'd be willing to eat in the morning. Each food shows its dominant nutrient(s) in parentheses — `Kale (Vit K)`, `Brazil nut (Selenium)` — so you can see at a glance what each one buys you.
 
-## What it does
+4. **Investigate.**
+   - **Hover a food name** to preview that food's contribution in isolation — the bars temporarily show only what *it* brings.
+   - **Hover a nutrient name** for a tooltip ranking the top 5 foods for that nutrient. Click any row in the tooltip to add that food directly. Useful when you have one stubborn gap and want to know your options.
 
-You assemble a combination of foods and pick portion sizes. The tool calculates which nutrient daily targets that combination covers and which are gaps. It visualizes coverage as horizontal bars with target ticks (DV) and ceiling ticks (UL — for nutrients where overdose is a real risk).
+5. **Adjust the view.**
+   - The default view is *Common gaps* — 15 nutrients a limited-variety diet typically misses. Toggle to *All nutrients* to see all 19 (adds protein, vitamin A, zinc, selenium — the ones a basic meat-bread-dairy diet already covers).
+   - **Don't care about a nutrient?** Click it to untrack — it greys out and demotes to the bottom of the list. Still computed, just out of the way.
 
-The food list is split:
+Your selections are saved in your browser's `localStorage`, so the dashboard is still there when you come back.
 
-- **Daily baseline** — pick from a dropdown of common everyday foods (rice, chicken, eggs, bread, etc.) plus sunlight as a non-food vitamin D contributor. These represent what you eat *anyway*.
-- **Curated power foods** — efficient, nutrient-dense picks grouped into clusters (leafy greens, colorful fruit/veg, nuts, seeds, specialists). These are what you'd add as the morning "cheat code" meal to fill the gaps your baseline misses.
+## What it tracks
 
-## Features
+19 nutrients: 3 macros (protein, fiber, fat) + 9 vitamins (A, C, D, E, K, B6, B9, B12, plus a couple of B's) + 7 minerals (calcium, iron, magnesium, potassium, zinc, selenium, iodine).
 
-- **19 tracked nutrients** — 3 macros + 9 vitamins + 7 minerals — based on FDA Daily Values and IOM Tolerable Upper Intake Limits where overdose risk is real.
-- **~33 hand-curated foods** with per-100g nutrient data and per-food portion presets (`1 nut (5g)`, `handful (15g)`, `1 sheet (3g)`, `20 min` for sunlight, etc.).
-- **Two views**: Common gaps (default — 15 nutrients a limited-variety diet typically misses) and All nutrients. Untrack any nutrient to demote it to the bottom (greyed but still computed).
-- **Specialty tags** next to each food name — `Kale (Vit K)`, `Brazil nut (Selenium)`, `Beef liver (B12, Vit A)` — at ≥40% DV per default portion, top three.
-- **Hover-isolate**: hover any food name and the bars temporarily show only that food's contribution. Useful for understanding what each food brings.
-- **Reverse lookup**: hover any nutrient name and a tooltip ranks the top 5 foods by % DV at default portion. Useful for filling a specific gap.
-- **Bar coloring**: <40% red · 40–79% amber · ≥80% green · over UL bright red.
-- **Daily baseline** with picker dropdown plus check-all/uncheck-all toggle.
-- **localStorage persistence** for selections, untracks, view, and baseline foods.
-- **Sticky bars panel** with themed scrollbar — bars stay visible while scrolling the food list.
-- **Lab dashboard theme** — dark, monospace numbers, no marketing copy.
-- **Single self-contained HTML file** — no build, no framework, no network requests.
+Targets come from [FDA Daily Values](https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels). Upper limits (where overdose is a real risk — selenium, vitamin A, iron, zinc, vitamin D, B6, niacin, folate) come from [IOM Dietary Reference Intakes](https://www.ncbi.nlm.nih.gov/books/NBK545442/).
 
-## Data sources (caveat: not directly queried)
+## Caveat — values are approximate
 
-The numbers in this tool — daily values, upper limits, per-100g food contents — were assembled from an LLM's training-data recall, not from live database lookups. They're *approximately right* (the kind of values you'd get if you read off the back of a nutrition label) but they have not been verified against the canonical sources. Treat them as v1 placeholders.
+The per-100g food numbers were assembled from training-data recall, not direct queries to [USDA FoodData Central](https://fdc.nal.usda.gov/). They're roughly right (back-of-the-label level) but not verified. Some nutrients (nori iodine, nutritional yeast B12 fortification) vary so much by brand/species that *any* single number is approximate.
 
-These are the canonical sources to verify against, and the right targets for a future scripted import:
+**Don't use this for medical or therapeutic dosing.** It's for getting a rough sense of where your daily eating sits, not clinical work.
 
-| Source | What it covers |
-|---|---|
-| [FDA Daily Values](https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels) | Daily target per nutrient (the bar's 100% mark) |
-| [IOM Dietary Reference Intakes — Upper Limits](https://www.ncbi.nlm.nih.gov/books/NBK545442/) | Tolerable upper intake (the bar's red ceiling) |
-| [USDA FoodData Central](https://fdc.nal.usda.gov/) | Per-100g food nutrient values |
+## Run it locally
 
-Of the three, the FDA DVs and IOM ULs are well-established constants and should be close to correct as encoded. The per-100g food values are the ones most likely to be off — and some (nori iodine, nutritional yeast B12 fortification) vary so much by species/brand/source that *any* single number is inherently approximate.
+It's a single self-contained HTML file. No build step, no framework, no network calls.
 
-**Don't rely on this tool for medical or therapeutic dosing.** It's for getting a rough sense of where your daily eating sits relative to standard targets, not for clinical use.
+- **Open `index.html` in any browser.** That's it.
+- To deploy your own copy on GitHub Pages: fork or clone, push to your repo, then **Settings → Pages → Deploy from branch → main → / (root) → Save**.
 
-If you spot a value that's visibly off, edit it directly in the `FOODS` array in `index.html` and reload — no rebuild needed.
-
-## On "Common gaps"
-
-The default view is a curated subset, not the full nutrient list. It targets nutrients a limited-variety diet (no greens, picky-eater profile) typically misses — *not* the medically most-essential nutrients (all 19 tracked nutrients are essential by the strict biological definition). Vitamin A, zinc, selenium, and protein are hidden by default because a basic meat-bread-dairy diet covers them easily. Toggle to "All nutrients" to see them.
-
-## Customizing the food list
+## Customizing
 
 All data lives in three arrays at the top of the `<script>` block in `index.html`:
 
 - `NUTRIENTS` — id, label, unit, DV, UL, gap flag
-- `CLUSTERS` — food groupings for the curated power foods
-- `FOODS` — per-100g nutrient values, portion presets, default portion, category (`cluster` or `common`), optional `cluster` ID and `hideGrams` flag
+- `CLUSTERS` — groupings for curated power foods
+- `FOODS` — per-100g values, portion presets, default portion, category (`cluster` or `common`)
 
-Add or edit entries directly. The UI reads from these on load. No build step — just save and refresh.
+Edit directly and refresh — no rebuild. To add a non-food contributor like sunlight, set `hideGrams: true` so the portion renders as a label (e.g. `20 min`) instead of a gram weight.
 
-To add a non-food contributor (like sunlight), set `hideGrams: true` so the portion shows as a label (e.g., `20 min`) and the gram total skips it.
+If you spot a clearly-wrong value, edit the `FOODS` entry directly. PRs welcome.
 
 ## Privacy
 
-100% client-side. No tracking, no analytics, no network requests. Selections are stored in your browser's `localStorage` and never leave your machine.
-
-## Project layout
-
-```
-index.html       Tool — single self-contained file. HTML + inline CSS + inline JS + inline JSON data.
-README.md        This file.
-CLAUDE.md        Project context for AI-assisted development.
-```
+100% client-side. No tracking, no analytics, no network requests. Selections live in your browser's `localStorage` and never leave your machine.
 
 ## License
 
-MIT — use as you wish.
+MIT.
