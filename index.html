@@ -157,7 +157,6 @@
       font-family: var(--mono);
       font-size: 11px;
       z-index: 100;
-      pointer-events: none;
       display: none;
       min-width: 220px; max-width: 320px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.5);
@@ -171,10 +170,22 @@
     }
     .nutrient-tooltip .tt-row {
       display: grid; grid-template-columns: 1fr auto;
-      gap: 12px; padding: 2px 0;
+      gap: 12px; padding: 3px 6px; margin: 0 -6px;
+      cursor: pointer; border-radius: 3px;
     }
+    .nutrient-tooltip .tt-row:hover { background: rgba(78, 201, 214, 0.10); }
+    .nutrient-tooltip .tt-row.selected {
+      opacity: 0.55; cursor: default;
+    }
+    .nutrient-tooltip .tt-row.selected:hover { background: transparent; }
     .nutrient-tooltip .tt-row .tt-name { color: var(--text); }
     .nutrient-tooltip .tt-row .tt-val { color: var(--dim); white-space: nowrap; }
+    .nutrient-tooltip .tt-hint {
+      color: var(--dim); font-size: 9.5px;
+      margin-top: 6px; padding-top: 4px;
+      border-top: 1px dashed var(--border);
+      font-style: italic;
+    }
 
     /* --- SCROLLBAR (sticky bars panel) --- */
     #bars-section::-webkit-scrollbar { width: 8px; }
@@ -349,7 +360,10 @@
                  vitC: 9.7, vitA: 3, vitD: 0, vitK: 19, vitE: 0.6,
                  b6: 0.05, folate: 6, b12: 0, choline: 6,
                  calcium: 6, iron: 0.3, iodine: 0, magnesium: 6, potassium: 77, zinc: 0.16, selenium: 0.1 } },
-    { id: 'walnut', name: 'Walnut', category: 'cluster', cluster: 'nuts',
+    // Walnut — moved from cluster to baseline picker. Its omega-3 ALA case is
+    // covered more efficiently by chia (per gram and per portion). Available as
+    // a common food for users who want them.
+    { id: 'walnut', name: 'Walnut', category: 'common',
       portions: [['1 nut (4g)', 4], ['handful (15g)', 15], ['30g', 30]],
       defaultPortion: 1,
       per100g: { calories: 654, protein: 15, fiber: 6.7, omega3: 9.1,
@@ -737,6 +751,30 @@
                  vitC: 10, vitA: 7, vitD: 0, vitK: 21, vitE: 2.07,
                  b6: 0.26, folate: 81, b12: 0, choline: 14.2,
                  calcium: 12, iron: 0.55, iodine: 0, magnesium: 29, potassium: 485, zinc: 0.64, selenium: 0.4 } },
+    // Latin American / Caribbean staple. Different from chickpeas/lentils.
+    { id: 'black_beans', name: 'Black beans (cooked)', category: 'common',
+      portions: [['½ cup (86g)', 86], ['1 cup (172g)', 172], ['100g', 100]],
+      defaultPortion: 1,
+      per100g: { calories: 132, protein: 8.9, fiber: 8.7, omega3: 0.18,
+                 vitC: 0, vitA: 0, vitD: 0, vitK: 0, vitE: 0.02,
+                 b6: 0.07, folate: 149, b12: 0, choline: 30,
+                 calcium: 27, iron: 2.1, iodine: 0, magnesium: 70, potassium: 355, zinc: 1.1, selenium: 1.2 } },
+    // Globally one of the most-eaten foods (Africa, SE Asia, Americas).
+    { id: 'peanuts', name: 'Peanuts (raw)', category: 'common',
+      portions: [['small handful (15g)', 15], ['handful (28g)', 28], ['50g', 50]],
+      defaultPortion: 1,
+      per100g: { calories: 567, protein: 25.8, fiber: 8.5, omega3: 0.003,
+                 vitC: 0, vitA: 0, vitD: 0, vitK: 0, vitE: 8.33,
+                 b6: 0.35, folate: 240, b12: 0, choline: 52.5,
+                 calcium: 92, iron: 4.6, iodine: 0, magnesium: 168, potassium: 705, zinc: 3.27, selenium: 7.2 } },
+    // SE Asian / South Indian curry/cooking staple. Calorie-dense, mostly fat.
+    { id: 'coconut_milk', name: 'Coconut milk (canned)', category: 'common',
+      portions: [['¼ cup (60g)', 60], ['½ cup (120g)', 120], ['100g', 100]],
+      defaultPortion: 0,
+      per100g: { calories: 230, protein: 2.3, fiber: 2.2, omega3: 0.01,
+                 vitC: 1, vitA: 0, vitD: 0, vitK: 0.1, vitE: 0.15,
+                 b6: 0.03, folate: 16, b12: 0, choline: 8.5,
+                 calcium: 18, iron: 3.3, iodine: 0, magnesium: 46, potassium: 263, zinc: 0.7, selenium: 6.2 } },
   ];
 
   // ============================================================
@@ -745,11 +783,34 @@
 
   const STATE_KEY = 'nutrient-cheat-code-v1';
 
+  // Pre-populated defaults applied only on a fresh load (no saved state).
+  // Each food id below is auto-selected at its declared `defaultPortion`.
+  // Common foods are also auto-added to the Daily baseline section.
+  // Anyone forking the repo can edit this list to ship their own preset.
+  const FIRST_LOAD_DEFAULTS = [
+    // Cluster (power foods) — checked by default.
+    'kale', 'pepper', 'chia', 'pumpkin_seed', 'sunflower_seed', 'brazil_nut',
+    // Common (Daily baseline) — auto-added + selected.
+    'rice_white', 'chicken_breast', 'bread_wheat', 'sunlight',
+  ];
+
   function loadState() {
     const blank = { selections: {}, untracked: [], view: 'common', baselineFoods: [] };
     const validViews = ['common', 'all'];
     try {
-      const saved = JSON.parse(localStorage.getItem(STATE_KEY) || '{}');
+      const savedRaw = localStorage.getItem(STATE_KEY);
+      if (!savedRaw) {
+        // First-time visitor: seed with FIRST_LOAD_DEFAULTS so the tool isn't empty.
+        const seed = { ...blank, selections: {}, baselineFoods: [] };
+        for (const id of FIRST_LOAD_DEFAULTS) {
+          const food = FOODS.find(f => f.id === id);
+          if (!food) continue;
+          seed.selections[id] = food.defaultPortion;
+          if (food.category === 'common') seed.baselineFoods.push(id);
+        }
+        return seed;
+      }
+      const saved = JSON.parse(savedRaw);
       return {
         ...blank,
         ...saved,
@@ -899,7 +960,19 @@
   // Attach preview hover to a specific trigger element (typically the food name)
   // so checkbox/dropdown interaction doesn't fire the preview. The row still gets
   // the visual highlight so the user can see which food is being previewed.
+  // Hide-with-delay so the cursor can travel from the bar label into the tooltip
+  // (and click a row) without the tooltip dismissing mid-traversal.
+  let tooltipHideTimer = null;
+  function scheduleHideTooltip() {
+    if (tooltipHideTimer) clearTimeout(tooltipHideTimer);
+    tooltipHideTimer = setTimeout(() => hideNutrientTooltip(), 250);
+  }
+  function cancelHideTooltip() {
+    if (tooltipHideTimer) { clearTimeout(tooltipHideTimer); tooltipHideTimer = null; }
+  }
+
   function showNutrientTooltip(nutrient, anchorEl) {
+    cancelHideTooltip();
     const tooltip = document.getElementById('nutrient-tooltip');
     const top = topFoodsByPctDV(nutrient.id, 5);
     if (top.length === 0) { hideNutrientTooltip(); return; }
@@ -907,27 +980,47 @@
 
     const title = document.createElement('div');
     title.className = 'tt-title';
-    title.textContent = `Top ${nutrient.label} sources (default portion)`;
+    title.textContent = `Top ${nutrient.label} sources — click to add`;
     tooltip.appendChild(title);
 
     for (const item of top) {
       const row = document.createElement('div');
       row.className = 'tt-row';
+      const food = item.food;
+      const isSelected = state.selections[food.id] != null;
+      if (isSelected) row.classList.add('selected');
+
       const name = document.createElement('span');
       name.className = 'tt-name';
-      const portionLabel = item.food.hideGrams
-        ? item.portion[0]
-        : `${item.portion[1]}g`;
-      name.textContent = `${item.food.name} (${portionLabel})`;
+      const portionLabel = food.hideGrams ? item.portion[0] : `${item.portion[1]}g`;
+      name.textContent = `${food.name} (${portionLabel})`;
       const val = document.createElement('span');
       val.className = 'tt-val';
       val.textContent = `${Math.round(item.pct)}%`;
       row.appendChild(name);
       row.appendChild(val);
+
+      if (!isSelected) {
+        row.addEventListener('click', () => {
+          if (food.category === 'common' && !state.baselineFoods.includes(food.id)) {
+            state.baselineFoods.push(food.id);
+          }
+          state.selections[food.id] = food.defaultPortion;
+          saveState();
+          hideNutrientTooltip();
+          render();
+        });
+      }
       tooltip.appendChild(row);
     }
 
-    // Position fixed, just below the anchor row, clamped to the viewport.
+    // Hint footer
+    const hint = document.createElement('div');
+    hint.className = 'tt-hint';
+    hint.textContent = '% of DV at default portion. Greyed = already in stack.';
+    tooltip.appendChild(hint);
+
+    // Position fixed, just below the anchor, clamped to the viewport.
     const rect = anchorEl.getBoundingClientRect();
     tooltip.classList.add('visible');
     const tipRect = tooltip.getBoundingClientRect();
@@ -944,6 +1037,7 @@
   }
 
   function hideNutrientTooltip() {
+    cancelHideTooltip();
     document.getElementById('nutrient-tooltip').classList.remove('visible');
   }
 
@@ -1257,7 +1351,7 @@
     label.className = 'bar-label';
     label.textContent = nutrient.label;
     label.addEventListener('mouseenter', () => showNutrientTooltip(nutrient, label));
-    label.addEventListener('mouseleave', hideNutrientTooltip);
+    label.addEventListener('mouseleave', scheduleHideTooltip);
 
     const track = document.createElement('div');
     track.className = 'bar-track';
@@ -1341,6 +1435,11 @@
       renderBars();
     });
   });
+
+  // Tooltip stays visible while the cursor is over it (so its rows can be clicked).
+  const _tooltipEl = document.getElementById('nutrient-tooltip');
+  _tooltipEl.addEventListener('mouseenter', cancelHideTooltip);
+  _tooltipEl.addEventListener('mouseleave', scheduleHideTooltip);
 
   // ============================================================
   //  GO

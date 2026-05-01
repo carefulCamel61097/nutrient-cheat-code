@@ -154,6 +154,14 @@ Mental model: car dashboard, mixing console, htop. Not a recipe app.
 - **Values are still approximate** — sourced from training-data-recall of USDA values, not pixel-verified against the live USDA FoodData Central database. Final verification pass is the remaining curation work.
 - **Next:** verify all per-100g values against live USDA, optionally add new clusters (legumes/grains, dairy, eggs, fatty fish) if the current cluster organization feels incomplete.
 
+### Subsequent iterations (2026-05-01, post-deploy)
+
+- **`FIRST_LOAD_DEFAULTS`** constant near the top of the script — list of food ids auto-selected on a fresh load (no localStorage). Anyone forking can edit. Currently seeds: kale + pepper + chia + pumpkin seeds + sunflower seeds + brazil nut (cluster), plus white rice + chicken breast + whole-wheat bread + sunlight (baseline). Demonstrates the tool with a populated dashboard for first-time visitors.
+- **Walnut moved to baseline picker** — chia covers omega-3 ALA more efficiently. Walnut still available via picker for users who want it.
+- **Cultural-coverage additions in baseline picker**: black beans (Latin America/Caribbean), peanuts (Africa/SE Asia/global), coconut milk (SE Asia/South India).
+- **Tooltip rows are clickable** — hovering a nutrient name shows top 5 foods + clicking one auto-adds (baseline) and selects (cluster or baseline) that food. A 250ms grace period on hide lets the cursor traverse from the label into the tooltip without dismissal. "Selected" rows show greyed/non-interactive.
+- **Repo deployed** at <https://github.com/carefulCamel61097/nutrient-cheat-code>, hosted at <https://carefulcamel61097.github.io/nutrient-cheat-code/>.
+
 ## Working notes for Claude
 
 - Frame suggestions around **efficiency and minimal effort**, not enjoyment or meal planning. The user is not trying to enjoy the healthy portion — he wants to get it over with fast.
